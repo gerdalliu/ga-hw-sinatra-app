@@ -1,5 +1,5 @@
-require 'sequel' #=> Might wanna replace this with ActiveRecord
+require 'activerecord'
 
-#DB = Sequel.postgres 'dbname', user:'bduser', password:'dbpass', host:'localhost'
+DB = Sequel.postgres 'yolodob', user:'gerd', password:'gerd123', host:'localhost'
 
 require_relative 'user'

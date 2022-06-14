@@ -4,7 +4,6 @@ require 'sinatra/namespace'
 class AdminController < Sinatra::Application
 
     #! Do we even need namespaces?
-
     namespace '/admin', :provides => ['json'] do
 
         #TODO add authentication
