@@ -31,7 +31,9 @@ class AuthMiddleware
             #=> This is good to make sure headers are sent in response.
             status, headers, response = @app.call(env)
             headers['Content-Type']="application/json"
+            
             [status, headers, response]
+            
         
         rescue JWT::ExpiredSignature => err
 
@@ -49,6 +51,7 @@ class AuthMiddleware
  
 
     def should_authenticate?
-        @req.path =~ /admin\/*/
+        @req.path.match?(/admin\/*/) 
+        # && ! @req.path.match(/some user route/) 
     end
 end
