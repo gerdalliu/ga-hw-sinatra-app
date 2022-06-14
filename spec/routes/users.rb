@@ -1,6 +1,10 @@
 require_relative "../controller/user"
 require_relative "../../helpers/token"
 
+'''
+Let\'s assume that Users cannot update their accounts themselves, only admins can. 
+
+'''
 class UserRoutes < Sinatra::Base
  
     register Sinatra::Namespace
@@ -57,18 +61,22 @@ class UserRoutes < Sinatra::Base
         end
     end
 
-    #TODO see if we really need the ID
-    #TODO require authentication for this one (or at least check the password)
-    delete('/account/:username') do
+    delete('/') do
+        
+        if request.env["A9_PERMISSIONS"] != "USER"
+            return {msg: "Could not delete account.", detail: "You need to log in first!"}.to_json 
+        end
+        
+        summary = UserController.auth(params['email'], params['password'])
 
-        payload = params
-        payload = JSON.parse(request.body.read) unless params[:path]
+        if ! summary[:ok]
+            return {msg: "Could not delete account.", detail: "User not found or wrong password"}.to_json 
+        end
 
-        logger.info "Updating user with #{payload[:meta]}"
-        summary = UserController.updateOne(payload)
+        summary = UserController.deleteOne(params['email'])
 
         if summary[:ok]
-            {user: summary[:user], msg: "Account deleted."}.to_json
+            {msg: "Account deleted."}.to_json
         else
             {msg: "Could not delete account."}.to_json 
         end
@@ -76,16 +84,17 @@ class UserRoutes < Sinatra::Base
 
     namespace '/admin' do
 
-        #TODO
         get('/') do
-            UserController.getOne(params['id'])
+            summary = UserController.getOne(params['id'])
+
+            summary[:user] unless ! summary[:ok]
         end
     
+        #TODO test thi
         post('/create') do
             payload = params
-            payload = JSON.parse(request.body.read).symbolize_keys unless params[:path]
+            payload = JSON.parse(request.body.read) unless params[:path]
     
-            logger.info "Creating user with #{payload[:meta]}"
             summary = UserController.createOne(payload)
     
             if summary[:ok]
@@ -95,13 +104,11 @@ class UserRoutes < Sinatra::Base
             end
         end
     
-        #TODO see if we really need the ID
         put('/update') do
     
             payload = params
-            payload = JSON.parse(request.body.read).symbolize_keys unless params[:path]
+            payload = JSON.parse(request.body.read) unless params[:path]
     
-            logger.info "Updating user with #{payload[:meta]}"
             summary = UserController.updateOne(payload)
     
             if summary[:ok]
@@ -129,6 +136,7 @@ class UserRoutes < Sinatra::Base
         end
         
         get('/db') do
+            puts request.env["A9_PERMISSIONS"]
             {msg: "This gets a database with name #{params['name']}" }.to_json
         end
 
