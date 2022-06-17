@@ -9,7 +9,12 @@ end
 
 map '/users' do 
     usersApp = UserRoutes.new
-    # usersApp.use AuthMiddleware
     run usersApp
+end
+
+
+map '/db' do 
+    dbApp = DatabaseRoutes.new
+    run dbApp
 end
 

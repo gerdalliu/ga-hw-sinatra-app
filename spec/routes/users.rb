@@ -90,7 +90,6 @@ class UserRoutes < Sinatra::Base
             summary[:user] unless ! summary[:ok]
         end
     
-        #TODO test thi
         post('/create') do
             payload = params
             payload = JSON.parse(request.body.read) unless params[:path]
@@ -128,25 +127,6 @@ class UserRoutes < Sinatra::Base
             end
         end
         #~~   namespace '/admin', :provides => ['json'] do
-
-        #=> Schema endpoints
-        #TODO
-        post('/db') do
-            {msg: "This creates a DB by getting a schema file as an upload"}.to_json
-        end
-        
-        get('/db') do
-            puts request.env["A9_PERMISSIONS"]
-            {msg: "This gets a database with name #{params['name']}" }.to_json
-        end
-
-        delete('/db') do
-            "This deletes schema with name #{params['name']}"
-        end
-
-        put('/db') do
-            "This should get an uploaded schema file and apply it"
-        end
         
     end
 end

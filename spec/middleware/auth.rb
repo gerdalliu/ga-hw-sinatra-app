@@ -22,14 +22,16 @@ class AuthMiddleware
 
             if should_authenticate?
                 authToken = env.fetch('HTTP_AUTHORIZATION')[7..-1]
-                puts authToken
         
                 fkey = File.read("./util/sec/pubkey")
                 pubkey = OpenSSL::PKey::RSA.new(fkey)
 
                 decoded_token = JWT.decode authToken, pubkey, false, { algorithm: 'RS256' }
 
-                #=> To add data to the request; this modifies the `env` variable
+                if admin_duties?
+                    Rack::Response.new("INSUFFICIENT PRIVILEGES", 405, {}).finish unless decoded_token[0]["permissions"] == "ADMIN"
+                end
+                #=> Add data to the request (headers); this modifies the `env` variable
                 @req.set_header("A9_PERMISSIONS", decoded_token[0]["permissions"])
             end
             
@@ -51,14 +53,14 @@ class AuthMiddleware
 
             Rack::Response.new("UNAUTHORIZED", 401, {}).finish
         end
-
     end
- 
+
+    def admin_duties?
+        @req.path.match?(/.*\/*admin\/*.*/) || @req.path.match?(/.*\/*db\/*.*/)
+    end
 
     def should_authenticate?
-
-        @req.path.match?(/\w+admin\/*/) || @req.request_method == "DELETE"
-
-        # && ! @req.path.match(/some user route/) 
+        admin_duties? || @req.request_method == "DELETE"
     end
+
 end
