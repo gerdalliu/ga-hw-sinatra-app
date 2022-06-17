@@ -51,7 +51,7 @@ class AuthMiddleware
         rescue => err
             puts "ERR: #{err}"
 
-            Rack::Response.new("UNAUTHORIZED", 401, {}).finish
+            Rack::Response.new("SOMETHING WENT WRONG", 501, {}).finish
         end
     end
 
