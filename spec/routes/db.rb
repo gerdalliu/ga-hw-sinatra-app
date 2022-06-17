@@ -174,8 +174,7 @@ class DatabaseRoutes < Sinatra::Base
                 return {msg: "Could not alter table.", detail: "Table name not provided"}.to_json 
             end
 
-            ## primary_key, rename, drop, add, modify type
-            unless payload.has_key?('column_details') && ! (payload['columns'].empty?)
+            unless payload.has_key?('column_details') && ! (payload['column_details'].empty?)
                 return {msg: "Could not alter table.", detail: "No column info provided"}.to_json 
             end
             
@@ -202,32 +201,47 @@ class DatabaseRoutes < Sinatra::Base
             {msg: "This creates a DB by getting a schema file as an upload"}.to_json
         end
         
-        get('/select') do
-            puts request.env["A9_PERMISSIONS"]
-            {msg: "This gets a database with name #{params['name']}" }.to_json
+        ## simple selects, not grouping or limiting/paginating
+        post('/select') do
+            
+            payload = params
+            payload = JSON.parse(request.body.read) unless params[:path]
+            
+            unless payload.has_key?("dbname") && ! (payload["dbname"].empty?)
+                return {msg: "Could not perform select.", detail: "No database target provided"}.to_json 
+            end
+
+            unless payload.has_key?('name') && ! (payload['name'].empty?)
+                return {msg: "Could not perform select.", detail: "Table name not provided"}.to_json 
+            end
+
+            unless payload.has_key?('columns') && ! (payload['name'].empty?)
+                return {msg: "Could not perform select.", detail: "No column names provided"}.to_json 
+            end
+
+            if payload.has_key?('conditions') && (payload['conditions'].empty?)
+                return {msg: "Could not perform select.", detail: "Conditions can't be present and empty"}.to_json 
+            end
+
+            summary = DBController.select(payload['dbname'], payload['name'], payload['columns'], payload['conditions'])
+    
+            if summary[:ok]
+                {data: summary[:data]}.to_json
+            else
+                {msg: "Could not perform select.", details: summary[:details]}.to_json 
+            end
+
         end
 
         delete('/delete') do
-            "This deletes schema with name #{params['name']}"
+            "This deletes rows"
         end
 
         put('/update') do
-            "This should get an uploaded schema file and apply it"
+            "This updates rows"
         end
 
-        #=> The following should be used with full query strings and parameters being sent in a string
-        get('') do
-        end
-
-        post('') do
-        end
-        
-        put('') do
-        end
-
-        delete('') do
-        end
-        
+       
     end
 
 end

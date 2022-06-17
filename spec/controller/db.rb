@@ -90,7 +90,7 @@ class DBController < Sinatra::Application
                     ## each col contains name, primary_key flag and a type field.
                     ## We could include more constraints, but it is not necessary
 
-                    symbolicName = col["name"].strip.to_sym
+                    symbolicName = col["name"].strip.downcase.to_sym
                     
                     isPkey = false
                     colType = String
@@ -161,6 +161,7 @@ class DBController < Sinatra::Application
         end
     end
 
+    ## We can specify only ONE operation, but for each operation we can specify multiple columns
     def self.alterTable(db, name, column_details, operation)
 
         begin
@@ -168,14 +169,14 @@ class DBController < Sinatra::Application
 
             symbolicTableName = name.strip.downcase.gsub(/\s+/, "_").to_sym
 
-            miscError
 
+            #! List of operations is minimal; can be extended later w/ things like NULL constraints etc.
             case operation.upcase
             when "ADD"
                 tmpConnection.alter_table(symbolicTableName) do
 
                     column_details.each do |col| 
-                        symbolicName = col["name"].strip.to_sym
+                        symbolicName = col["name"].strip.downcase.to_sym
                         add_column symbolicName, col["type"]
                     end
                 end
@@ -184,7 +185,7 @@ class DBController < Sinatra::Application
                 tmpConnection.alter_table(symbolicTableName) do
 
                     column_details.each do |col| 
-                        symbolicName = col.strip.to_sym
+                        symbolicName = col.strip.downcase.to_sym
                         drop_column symbolicName
                     end
                 end
@@ -192,32 +193,49 @@ class DBController < Sinatra::Application
             when "RENAME"
                 tmpConnection.alter_table(symbolicTableName) do
                     column_details.each do |col| 
-                        oldSymbolicName = col["old"].strip.to_sym
-                        newSymbolicName = col["new"].strip.to_sym
-                        add_column oldSymbolicName, newSymbolicName
+                        oldSymbolicName = col["old"].strip.downcase.to_sym
+                        newSymbolicName = col["new"].strip.downcase.to_sym
+                        rename_column oldSymbolicName, newSymbolicName
                     end
 
                 end                
             when "PKEY"
+                tmpConnection.alter_table(symbolicTableName) do
+                    pkeys = Array.new
+                    column_details.each do |col|
+                        symbolicName = col.strip.downcase.to_sym
+                        pkeys.append(symbolicName)
+                    end
 
-                pkeys = Array.new
-                column_details["columns"].each do |col|
-                    symbolicName = col["name"].strip.to_sym
-                    pkeys.append(symbolicName)
+                    add_primary_key [*pkeys]
                 end
-
-                add_primary_key *pkeys
             else
                 raise StandardError "unknown operation"
             end      
             
-            raise StandardError "malformed column details" if miscError 
-
             {:ok => true}
         rescue => err
             {:ok => false, :details => err.message} 
         end
         
+    end
+
+    ############################################################################
+    def self.select(db, name, columns, conditions)
+
+        begin            
+            tmpConnection = Sequel.postgres db, user:ENV['DB_USER'], password:ENV['DB_PASS'], host:ENV['DB_HOST']
+
+            symbolicTableName = col["name"].strip.downcase.to_sym
+
+            columns.map!{ |c| c.to_sym }
+            dataset = tmpConnection[symbolicTableName].select(*columns).where(conditions)
+            
+            {:ok => true, :data => dataset.all}
+
+        rescue => err
+            {:ok => false, :details => err.message} 
+        end
     end
 end
 
