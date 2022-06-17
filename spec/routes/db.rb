@@ -97,46 +97,104 @@ class DatabaseRoutes < Sinatra::Base
     end
 
     # /db/table
-    #TODO how to connect to a specific database from the main connection?
     namespace '/table' do
 
-        post('/') do
-            #=> should 
+        post('') do
+
             payload = params
             payload = JSON.parse(request.body.read) unless params[:path]
             
-            unless payload.has_key? 'statement' && ! payload['statement'].empty?
-                return {msg: "Could not create table.", detail: "Query statement not provided"}.to_json 
+            unless payload.has_key?("dbname") && ! (payload["dbname"].empty?)
+                return {msg: "Could not create table.", detail: "No database target provided"}.to_json 
             end
 
-            unless payload.has_key? 'values' && payload['values'].kind_of?(Array) && payload['values'].length > 0
-                return {msg: "Could not create table.", detail: "Binding values must be provided as arrays"}.to_json 
+            unless payload.has_key?('name') && ! (payload['name'].empty?)
+                return {msg: "Could not create table.", detail: "Table name not provided"}.to_json 
             end
 
-            summary = DBController.createDatabase(payload['statement'], *payload['values'])
+            unless payload.has_key?('columns') && ! (payload['columns'].empty?)
+                return {msg: "Could not create table.", detail: "No columns provided"}.to_json 
+            end
+
+            summary = DBController.createTable(payload['dbname'], payload['name'], payload['columns'])
     
             if summary[:ok]
-                {msg: "Database created."}.to_json
+                {msg: "Table created."}.to_json
             else
-                {msg: "Could not create table.", detail: summary[:detail]}.to_json 
+                {msg: "Could not create table.", details: summary[:details]}.to_json 
             end
         end
         
-        get('/') do
-            {msg: "This gets a database with name #{params['name']}" }.to_json
+        get('') do
+            unless params.has_key?("dbname") && ! (params["dbname"].empty?)
+                return {msg: "Could not get table info.", detail: "No database target provided"}.to_json 
+            end
+
+            unless params.has_key?('name') && ! (params['name'].empty?)
+                return {msg: "Could not get table info.", detail: "Table name not provided"}.to_json 
+            end
+
+            summary = DBController.getTableDescription(params['dbname'], params['name'])
+
+            if summary[:ok]
+                {params['dbname'] => summary[:info]}.to_json
+            else
+                {msg: "Could not get table info.", details: summary[:details]}.to_json 
+            end
+           
         end
 
-        delete('/') do
-            "This deletes schema with name #{params['name']}"
+        delete('') do
+            unless params.has_key?("dbname") && ! (params["dbname"].empty?)
+                return {msg: "Could not delete table.", detail: "No database target provided"}.to_json 
+            end
+
+            unless params.has_key?('name') && ! (params['name'].empty?)
+                return {msg: "Could not delete table.", detail: "Table name not provided"}.to_json 
+            end
+
+            summary = DBController.dropTable(params['dbname'], params['name'])
+    
+            if summary[:ok]
+                {msg: "Table dropped."}.to_json
+            else
+                {msg: "Could not drop table.", details: summary[:detail]}.to_json 
+            end
         end
 
-        put('/') do
-            "This should get an uploaded schema file and apply it"
+        put('') do
+            payload = params
+            payload = JSON.parse(request.body.read) unless params[:path]
+            
+            unless payload.has_key?("dbname") && ! (payload["dbname"].empty?)
+                return {msg: "Could not alter table.", detail: "No database target provided"}.to_json 
+            end
+
+            unless payload.has_key?('name') && ! (payload['name'].empty?)
+                return {msg: "Could not alter table.", detail: "Table name not provided"}.to_json 
+            end
+
+            ## primary_key, rename, drop, add, modify type
+            unless payload.has_key?('column_details') && ! (payload['columns'].empty?)
+                return {msg: "Could not alter table.", detail: "No column info provided"}.to_json 
+            end
+            
+            unless payload.has_key?('operation') && ! (payload['operation'].empty?)
+                return {msg: "Could not alter table.", detail: "No operation specified"}.to_json 
+            end
+
+            summary = DBController.alterTable(payload['dbname'], payload['name'], payload['column_details'], payload['operation'])
+    
+            if summary[:ok]
+                {msg: "Table updated."}.to_json
+            else
+                {msg: "Could not update table schema.", details: summary[:details]}.to_json 
+            end
         end
     end
 
+    #TODO create the basic query string endpoints first.
     # /db/record
-    #=> These 
     namespace '/record' do
 
         post('/insert') do
@@ -156,6 +214,20 @@ class DatabaseRoutes < Sinatra::Base
         put('/update') do
             "This should get an uploaded schema file and apply it"
         end
+
+        #=> The following should be used with full query strings and parameters being sent in a string
+        get('') do
+        end
+
+        post('') do
+        end
+        
+        put('') do
+        end
+
+        delete('') do
+        end
+        
     end
 
 end
