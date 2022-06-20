@@ -5,16 +5,14 @@ require 'sequel'
 
 class DBController < Sinatra::Application
   #=> Connect to the main database
-  def initialize(app = nil)
-    super(app)
-    @primary_db = Sequel.postgres 'postgres', user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
-  end
+
+  PRIMARY_DB = Sequel.postgres 'postgres', user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
   # ! params must be a list of strings
   def self.create_database(db_name)
-    query = "CREATE DATABASE #{@@primary_db.literal(db_name).gsub!(/^'|'?$/, '')}"
+    query = "CREATE DATABASE #{PRIMARY_DB.literal(db_name).gsub!(/^'|'?$/, '')}"
 
-    @@primary_db.execute(query)
+    PRIMARY_DB.execute(query)
 
     { ok: true }
   rescue StandardError => e
@@ -22,7 +20,7 @@ class DBController < Sinatra::Application
   end
 
   def self.databases
-    res = @@primary_db['SELECT datname FROM pg_database']
+    res = PRIMARY_DB['SELECT datname FROM pg_database']
 
     data = []
 
@@ -36,9 +34,9 @@ class DBController < Sinatra::Application
   end
 
   def self.drop_database(db_name)
-    query = "DROP DATABASE #{@@primary_db.literal(db_name).gsub!(/^'|'?$/, '')}"
+    query = "DROP DATABASE #{PRIMARY_DB.literal(db_name).gsub!(/^'|'?$/, '')}"
 
-    @@primary_db.execute(query)
+    PRIMARY_DB.execute(query)
 
     { ok: true }
   rescue StandardError => e
@@ -46,7 +44,7 @@ class DBController < Sinatra::Application
   end
 
   def self.rename_database(old_name, new_name)
-    res = @@primary_db['SELECT datname FROM pg_database']
+    res = PRIMARY_DB['SELECT datname FROM pg_database']
 
     db_exists = res.any? do |r|
       r[:datname] == old_name
@@ -55,14 +53,14 @@ class DBController < Sinatra::Application
     puts db_exists
     return { ok: false, details: 'database not found' } unless db_exists
 
-    query = "ALTER DATABASE #{@@primary_db.literal(old_name).gsub!(
+    query = "ALTER DATABASE #{PRIMARY_DB.literal(old_name).gsub!(
       /^'|'?$/,
       ''
-    )} RENAME TO #{@@primary_db.literal(new_name).gsub!(
+    )} RENAME TO #{PRIMARY_DB.literal(new_name).gsub!(
       /^'|'?$/, ''
     )}"
 
-    @@primary_db.execute(query)
+    PRIMARY_DB.execute(query)
 
     { ok: true }
   rescue StandardError => e
@@ -214,7 +212,7 @@ class DBController < Sinatra::Application
     { ok: false, details: e.message }
   end
 
-  def self.insert(db, table, inputs)
+  def self.insert_record(db, table, inputs)
     tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
     symbolic_table_name = table.strip.downcase.gsub(/\s+/, '_').to_sym
@@ -224,7 +222,17 @@ class DBController < Sinatra::Application
 
     inserter.insert(**inputs)
 
-    raise StandardError "Could not insert to #{table}" if inserter.count != 1
+    { ok: true }
+  rescue StandardError => e
+    { ok: false, details: e.message }
+  end
+
+  def self.delete_record(db, table, id)
+    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+
+    symbolic_table_name = table.strip.downcase.gsub(/\s+/, '_').to_sym
+
+    tmp_connection[symbolic_table_name].where(id: id).delete
 
     { ok: true }
   rescue StandardError => e

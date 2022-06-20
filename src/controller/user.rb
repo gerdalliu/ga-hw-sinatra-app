@@ -3,7 +3,7 @@
 require_relative '../../helpers/hash'
 
 class UserController < Sinatra::Application
-  def self.get_one(id)
+  def get_one(id)
     user = User.where(id: id).delete
     { ok: true, user: user.to_hash }
   end

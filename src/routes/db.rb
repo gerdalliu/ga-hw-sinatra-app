@@ -20,11 +20,6 @@ class DatabaseRoutes < Sinatra::Base
     use Rack::Reloader
   end
 
-  def initialize(app = nil)
-    super(app)
-    @db_controller = DBController.new
-  end
-
   # /db/schema
   namespace '/schema' do
     post('') do
@@ -38,7 +33,7 @@ class DatabaseRoutes < Sinatra::Base
         }.to_json
       end
 
-      summary = @db_controller.create_database(payload['dbname'])
+      summary = DBController.create_database(payload['dbname'])
 
       if summary[:ok]
         { msg: 'Database created.' }.to_json
@@ -49,7 +44,7 @@ class DatabaseRoutes < Sinatra::Base
 
     #=> This lists all databases
     get('') do
-      summary = @db_controller.databases
+      summary = DBController.databases
 
       if summary[:ok]
         { tables: summary[:data] }.to_json
@@ -68,7 +63,7 @@ class DatabaseRoutes < Sinatra::Base
         }.to_json
       end
 
-      summary = @db_controller.drop_database(params['dbname'])
+      summary = DBController.drop_database(params['dbname'])
 
       if summary[:ok]
         { msg: 'Database deleted.' }.to_json
@@ -99,7 +94,7 @@ class DatabaseRoutes < Sinatra::Base
           }.to_json
         end
 
-        summary = @db_controller.rename_database(payload['dbname'], payload['rename_to'])
+        summary = DBController.rename_database(payload['dbname'], payload['rename_to'])
       end
 
       #=> can add other update procedures here
@@ -136,7 +131,7 @@ class DatabaseRoutes < Sinatra::Base
         }.to_json
       end
 
-      summary = @db_controller.createTable(payload['dbname'], payload['name'], payload['columns'])
+      summary = DBController.createTable(payload['dbname'], payload['name'], payload['columns'])
 
       if summary[:ok]
         { msg: 'Table created.' }.to_json
@@ -157,7 +152,7 @@ class DatabaseRoutes < Sinatra::Base
         }.to_json
       end
 
-      summary = @db_controller.get_table_description(params['dbname'], params['name'])
+      summary = DBController.get_table_description(params['dbname'], params['name'])
 
       if summary[:ok]
         { params['dbname'] => summary[:info] }.to_json
@@ -178,7 +173,7 @@ class DatabaseRoutes < Sinatra::Base
         }.to_json
       end
 
-      summary = @db_controller.drop_table(params['dbname'], params['name'])
+      summary = DBController.drop_table(params['dbname'], params['name'])
 
       if summary[:ok]
         { msg: 'Table dropped.' }.to_json
@@ -210,7 +205,7 @@ class DatabaseRoutes < Sinatra::Base
         return { msg: 'Could not alter table.', detail: 'No operation specified' }.to_json
       end
 
-      summary = @db_controller.alter_table(
+      summary = DBController.alter_table(
         payload['dbname'],
         payload['name'],
         payload['column_details'],
@@ -232,7 +227,6 @@ class DatabaseRoutes < Sinatra::Base
       payload = params
       payload = JSON.parse(request.body.read) unless params[:path]
 
-      puts payload
       unless payload.key?('dbname') && !payload['dbname'].empty?
         return { msg: 'Could not perform INSERT.', detail: 'No database target provided' }.to_json
       end
@@ -248,7 +242,7 @@ class DatabaseRoutes < Sinatra::Base
         return { msg: 'Could not perform INSERT.', detail: 'No column inputs specified' }.to_json
       end
 
-      summary = @db_controller.insert(payload['dbname'], payload['name'], payload['input'])
+      summary = DBController.insert_record(payload['dbname'], payload['name'], payload['input'])
 
       if summary[:ok]
         { data: summary[:data] }.to_json
@@ -262,7 +256,6 @@ class DatabaseRoutes < Sinatra::Base
       payload = params
       payload = JSON.parse(request.body.read) unless params[:path]
 
-      puts payload
       unless payload.key?('dbname') && !payload['dbname'].empty?
         return { msg: 'Could not perform SELECT.', detail: 'No database target provided' }.to_json
       end
@@ -275,18 +268,27 @@ class DatabaseRoutes < Sinatra::Base
       end
 
       unless payload.key?('columns') && !payload['name'].empty?
-        return { msg: 'Could not perform SELECT.', detail: 'No column names provided' }.to_json
+        return {
+          msg: 'Could not perform SELECT.',
+          detail: 'No column names provided'
+        }.to_json
       end
 
       if payload.key?('where') && payload['where'].empty?
-        return { msg: 'Could not perform SELECT.', detail: "Conditions can't be both present and empty" }.to_json
+        return {
+          msg: 'Could not perform SELECT.',
+          detail: "Conditions can't be both present and empty"
+        }.to_json
       end
 
       if payload.key?('lit_where') && payload['lit_where'].empty?
-        return { msg: 'Could not perform SELECT.', detail: "Conditions can't be both present and empty" }.to_json
+        return {
+          msg: 'Could not perform SELECT.',
+          detail: "Conditions can't be both present and empty"
+        }.to_json
       end
 
-      summary = @db_controller.select(
+      summary = DBController.select(
         payload['dbname'],
         payload['name'],
         payload['columns'],
@@ -301,10 +303,43 @@ class DatabaseRoutes < Sinatra::Base
       end
     end
 
+    ## A simple DELETE using just a single ID
     delete('/delete') do
-      'This deletes rows'
+      unless params.key?('dbname') && !params['dbname'].empty?
+        return {
+          msg: 'Could not perform DELETE.',
+          detail: 'No database target provided'
+        }.to_json
+      end
+
+      unless params.key?('name') && !params['name'].empty?
+        return {
+          msg: 'Could not perform DELETE.',
+          detail: 'Table name not provided'
+        }.to_json
+      end
+
+      unless params.key?('id') && !params['id'].empty?
+        return {
+          msg: 'Could not perform DELETE.',
+          detail: 'No database target provided'
+        }.to_json
+      end
+
+      summary = DBController.delete_record(
+        params['dbname'],
+        params['name'],
+        params['id']
+      )
+
+      if summary[:ok]
+        { msg: 'Record deleted.' }.to_json
+      else
+        { msg: 'Could not perform DELETE.', details: summary[:details] }.to_json
+      end
     end
 
+    # ! Not implementing this as of this time.
     put('/update') do
       'This updates rows'
     end

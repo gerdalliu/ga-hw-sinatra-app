@@ -8,11 +8,6 @@ class UserRoutes < Sinatra::Base
 
   use AuthMiddleware
 
-  def initialize(app = nil)
-      super(app)
-    @user_controller = UserController.new
-  end
-
   before do
     content_type 'application/json'
   end
@@ -21,14 +16,12 @@ class UserRoutes < Sinatra::Base
     enable :logging
   end
 
-
-
   #=> Login
   get('/login') do
     # payload = params
     # payload = JSON.parse(request.body.read) unless params["path"]
 
-    summary = @user_controller.auth(params['email'], params['password'])
+    summary = UserController.auth(params['email'], params['password'])
 
     if summary[:ok]
       token_payload = { permissions: summary[:permissions] } # ! ADMIN or USER
@@ -45,7 +38,7 @@ class UserRoutes < Sinatra::Base
 
     logger.info "Creating user with #{payload[:meta]}"
 
-    summary = @user_controller.create_one(payload)
+    summary = UserController.create_one(payload)
 
     if summary[:ok]
 
@@ -71,11 +64,11 @@ class UserRoutes < Sinatra::Base
       }.to_json
     end
 
-    summary = @user_controller.auth(params['email'], params['password'])
+    summary = UserController.auth(params['email'], params['password'])
 
     return { msg: 'Could not delete account.', detail: 'User not found or wrong password' }.to_json unless summary[:ok]
 
-    summary = @user_controller.delete_one(params['email'])
+    summary = UserController.delete_one(params['email'])
 
     if summary[:ok]
       { msg: 'Account deleted.' }.to_json
@@ -86,7 +79,7 @@ class UserRoutes < Sinatra::Base
 
   namespace '/admin' do
     get('/') do
-      summary = @user_controller.get_one(params['id'])
+      summary = UserController.get_one(params['id'])
 
       summary[:user] if summary[:ok]
     end
@@ -95,7 +88,7 @@ class UserRoutes < Sinatra::Base
       payload = params
       payload = JSON.parse(request.body.read) unless params[:path]
 
-      summary = @user_controller.create_one(payload)
+      summary = UserController.create_one(payload)
 
       if summary[:ok]
         { user: summary[:user], msg: 'User created.' }.to_json
@@ -108,7 +101,7 @@ class UserRoutes < Sinatra::Base
       payload = params
       payload = JSON.parse(request.body.read) unless params[:path]
 
-      summary = @user_controller.update_one(payload)
+      summary = UserController.update_one(payload)
 
       if summary[:ok]
         { user: summary[:user], msg: 'User updated.' }.to_json
@@ -118,7 +111,7 @@ class UserRoutes < Sinatra::Base
     end
 
     delete('/:id') do
-      ok = @user_controller.delete_one(params['id'])
+      ok = UserController.delete_one(params['id'])
 
       if ok
         { msg: 'User deleted.' }.to_json

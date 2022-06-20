@@ -29,18 +29,16 @@ class AuthMiddleware
           {}
         ).finish
       end
-      #=> Add data to the request (headers); this modifies the `env` variable
+
       @req.set_header('A9_PERMISSIONS', decoded_token[0]['permissions'])
     end
 
-    #=> This is good to make sure headers are sent in response.
     status, headers, response = @app.call(env)
     headers['Content-Type'] = 'application/json'
 
     [status, headers, response]
   rescue JWT::ExpiredSignature => e
     puts "EXPIRED TOKEN: #{e.message}"
-    # Handle expired token, e.g. logout user or deny access
 
     Rack::Response.new('EXPIRED TOKEN', 402, {}).finish
   rescue StandardError => e
