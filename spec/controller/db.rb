@@ -221,15 +221,37 @@ class DBController < Sinatra::Application
     end
 
     ############################################################################
-    def self.select(db, name, columns, conditions)
+
+    '''
+    "columns": ["id", "farbe"]
+    "where_and":{
+        "farbe": "pink"
+    }
+    '''
+
+    #TODO support OR and NEGATION operators
+    ## For now only positive-AND is supported in parametric way (i.e. no NOT, OR operators)
+    ## The rest is supported by providing literal condition strings like "NAME = 'test' OR 'NAME' LIKE '%Y' "
+    def self.select(db, table, columns, whereConditions, literalExpr)
 
         begin            
             tmpConnection = Sequel.postgres db, user:ENV['DB_USER'], password:ENV['DB_PASS'], host:ENV['DB_HOST']
 
-            symbolicTableName = col["name"].strip.downcase.to_sym
+            symbolicTableName = table.strip.downcase.gsub(/\s+/, "_").to_sym
 
-            columns.map!{ |c| c.to_sym }
-            dataset = tmpConnection[symbolicTableName].select(*columns).where(conditions)
+            columns = columns.map do |v|
+                v.to_sym
+            end
+
+            dataset = nil
+            if literalExpr != nil
+                dataset = tmpConnection[symbolicTableName].select(*columns).where(Sequel.lit(literalExpr))
+            elsif whereConditions == nil
+                dataset = tmpConnection[symbolicTableName].select(*columns)
+            else
+                whereConditions = whereConditions.transform_keys(&:to_sym)
+                dataset = tmpConnection[symbolicTableName].select(*columns).where(whereConditions)
+            end
             
             {:ok => true, :data => dataset.all}
 

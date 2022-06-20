@@ -207,6 +207,7 @@ class DatabaseRoutes < Sinatra::Base
             payload = params
             payload = JSON.parse(request.body.read) unless params[:path]
             
+            puts payload
             unless payload.has_key?("dbname") && ! (payload["dbname"].empty?)
                 return {msg: "Could not perform select.", detail: "No database target provided"}.to_json 
             end
@@ -219,11 +220,11 @@ class DatabaseRoutes < Sinatra::Base
                 return {msg: "Could not perform select.", detail: "No column names provided"}.to_json 
             end
 
-            if payload.has_key?('conditions') && (payload['conditions'].empty?)
-                return {msg: "Could not perform select.", detail: "Conditions can't be present and empty"}.to_json 
+            if (payload.has_key?('where') && (payload['where'].empty?)) || (payload.has_key?('lit_where') && (payload['lit_where'].empty?))
+                return {msg: "Could not perform select.", detail: "Conditions can't be both present and empty"}.to_json 
             end
 
-            summary = DBController.select(payload['dbname'], payload['name'], payload['columns'], payload['conditions'])
+            summary = DBController.select(payload['dbname'], payload['name'], payload['columns'], payload['where'], payload['lit_where'])
     
             if summary[:ok]
                 {data: summary[:data]}.to_json
