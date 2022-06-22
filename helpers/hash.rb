@@ -11,6 +11,7 @@ class HashUtil
     hash_handle = BCrypt::Password.new(hash)
 
     # ! Why I hate Ruby: If we do `plain == hashHandle` it returns false, when `hashHandle == plain` returns true.
+    # ! That's because of the operator overloading
     hash_handle == plain
   end
 end

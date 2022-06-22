@@ -4,9 +4,8 @@ require_relative '../../helpers/hash'
 require 'sequel'
 
 class DBController < Sinatra::Application
-  #=> Connect to the main database
 
-  PRIMARY_DB = Sequel.postgres 'postgres', user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+  PRIMARY_DB = Sequel.postgres ENV['PRIMARY_DB_NAME'], user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
   # ! params must be a list of strings
   def self.create_database(db_name)

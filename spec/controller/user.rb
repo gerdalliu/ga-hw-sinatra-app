@@ -3,6 +3,8 @@
 require_relative '../../helpers/hash'
 
 class UserController < Sinatra::Application
+  DB = Sequel.postgres ENV['USER_DB_NAME'], user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+
   def get_one(id)
     user = User.where(id: id).delete
     { ok: true, user: user.to_hash }
@@ -11,7 +13,7 @@ class UserController < Sinatra::Application
   def self.create_one(user_data)
     # ! validations of fields can take place here if needed
 
-    user_exists = User.where(email: user_data['email']).any? { |_u| true }
+    user_exists = DB[:user].where(email: user_data['email']).any? { |_u| true }
 
     return { ok: false, detail: 'User already exists' } if user_exists
 
@@ -31,13 +33,13 @@ class UserController < Sinatra::Application
   end
 
   def self.delete_one(email)
-    User.where(email: email).delete
+    DB[:user].where(email: email).delete
     { ok: true }
   end
 
   def self.update_one(user_data)
     # ! validations of fields can take place here if needed
-    user_exists = User.where(email: user_data['email']).any? { |_u| true }
+    user_exists = DB[:user].where(email: user_data['email']).any? { |_u| true }
 
     return { ok: false, detail: 'User not found.' } unless user_exists
 
@@ -57,7 +59,7 @@ class UserController < Sinatra::Application
   end
 
   def self.auth(email, password)
-    user = User.where(email: email).find { |u| HashUtil.check(u.password, password) }
+    user = DB[:user].where(email: email).find { |u| HashUtil.check(u.password, password) }
 
     unless user.nil?
 
