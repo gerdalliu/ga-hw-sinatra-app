@@ -1,0 +1,5 @@
+---
+applications:
+- name: rubyapp
+  memory: 256M
+  instances: 1
