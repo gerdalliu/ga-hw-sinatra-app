@@ -4,15 +4,18 @@ require_relative '../../helpers/hash'
 require 'sequel'
 
 class DBController < Sinatra::Application
-  #=> Connect to the main database
+  
+  def self.PRIMARY_DB
+    unless defined? @PDB
+      @PDB = Sequel.postgres ENV['PRIMARY_DB_NAME'], user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    end
+      return @PDB
+  end
 
-  PRIMARY_DB = Sequel.postgres 'postgres', user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
-
-  # ! params must be a list of strings
   def self.create_database(db_name)
     query = "CREATE DATABASE #{PRIMARY_DB.literal(db_name).gsub!(/^'|'?$/, '')}"
 
-    PRIMARY_DB.execute(query)
+    self.PRIMARY_DB.execute(query)
 
     { ok: true }
   rescue StandardError => e
@@ -20,7 +23,7 @@ class DBController < Sinatra::Application
   end
 
   def self.databases
-    res = PRIMARY_DB['SELECT datname FROM pg_database']
+    res = self.PRIMARY_DB['SELECT datname FROM pg_database']
 
     data = []
 
@@ -36,7 +39,7 @@ class DBController < Sinatra::Application
   def self.drop_database(db_name)
     query = "DROP DATABASE #{PRIMARY_DB.literal(db_name).gsub!(/^'|'?$/, '')}"
 
-    PRIMARY_DB.execute(query)
+    self.PRIMARY_DB.execute(query)
 
     { ok: true }
   rescue StandardError => e
@@ -44,7 +47,7 @@ class DBController < Sinatra::Application
   end
 
   def self.rename_database(old_name, new_name)
-    res = PRIMARY_DB['SELECT datname FROM pg_database']
+    res = self.PRIMARY_DB['SELECT datname FROM pg_database']
 
     db_exists = res.any? do |r|
       r[:datname] == old_name
@@ -60,14 +63,13 @@ class DBController < Sinatra::Application
       /^'|'?$/, ''
     )}"
 
-    PRIMARY_DB.execute(query)
+    self.PRIMARY_DB.execute(query)
 
     { ok: true }
   rescue StandardError => e
     { ok: false, details: e.message }
   end
 
-  ############################################################################
   def self.create_table(db, name, columns)
     tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
