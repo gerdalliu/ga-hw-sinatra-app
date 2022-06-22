@@ -2,7 +2,7 @@
 
 require 'sinatra/base'
 require 'sinatra/reloader'
-require 'dotenv'
+require 'dotenv/load'
 
 require_relative 'src/routes/init'
 require_relative './config/environment'
