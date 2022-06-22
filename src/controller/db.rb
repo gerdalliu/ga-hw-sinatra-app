@@ -4,18 +4,20 @@ require_relative '../../helpers/hash'
 require 'sequel'
 
 class DBController < Sinatra::Application
-  
-  def self.PRIMARY_DB
+  def self.primary_db
     unless defined? @PDB
-      @PDB = Sequel.postgres ENV['PRIMARY_DB_NAME'], user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+      @pdb = Sequel.postgres ENV['PRIMARY_DB_NAME'],
+                             user: ENV['DB_USER'],
+                             password: ENV['DB_PASS'],
+                             host: ENV['DB_HOST']
     end
-      return @PDB
+    @pdb
   end
 
   def self.create_database(db_name)
     query = "CREATE DATABASE #{PRIMARY_DB.literal(db_name).gsub!(/^'|'?$/, '')}"
 
-    self.PRIMARY_DB.execute(query)
+    primary_db.execute(query)
 
     { ok: true }
   rescue StandardError => e
@@ -23,7 +25,7 @@ class DBController < Sinatra::Application
   end
 
   def self.databases
-    res = self.PRIMARY_DB['SELECT datname FROM pg_database']
+    res = primary_db['SELECT datname FROM pg_database']
 
     data = []
 
@@ -39,7 +41,7 @@ class DBController < Sinatra::Application
   def self.drop_database(db_name)
     query = "DROP DATABASE #{PRIMARY_DB.literal(db_name).gsub!(/^'|'?$/, '')}"
 
-    self.PRIMARY_DB.execute(query)
+    primary_db.execute(query)
 
     { ok: true }
   rescue StandardError => e
@@ -47,7 +49,7 @@ class DBController < Sinatra::Application
   end
 
   def self.rename_database(old_name, new_name)
-    res = self.PRIMARY_DB['SELECT datname FROM pg_database']
+    res = primary_db['SELECT datname FROM pg_database']
 
     db_exists = res.any? do |r|
       r[:datname] == old_name
@@ -63,7 +65,7 @@ class DBController < Sinatra::Application
       /^'|'?$/, ''
     )}"
 
-    self.PRIMARY_DB.execute(query)
+    primary_db.execute(query)
 
     { ok: true }
   rescue StandardError => e
