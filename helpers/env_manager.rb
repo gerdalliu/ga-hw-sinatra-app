@@ -1,6 +1,7 @@
 require 'json'
 
-# TODO: in production should provide 'USER_DB_NAME' and 'APP_ENV' explicitly
+#! replace w/ URI package logic
+# TODO: in production we should provide 'USER_DB_NAME' and 'APP_ENV' explicitly
 class EnvParser
   def self.hash(password)
     BCrypt::Password.create(password) #=> returns hash for storing
@@ -11,7 +12,6 @@ class EnvParser
 
     cf_uri = envs['postgresql']['credentials']['uri']
 
-    # port
     # puts cf_uri.split("/")[2].split("@")[1].split(",")[0].split(":")[1]
     ENV['DB_HOST'] = cf_uri.split('/')[2].split('@')[1].split(',')[0].split(':')[0] # host
     ENV['PRIMARY_DB_NAME'] = cf_uri.split('/')[3] # database

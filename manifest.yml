@@ -6,3 +6,6 @@ applications:
   host: garuby
   buildpacks:
   - https://github.com/cloudfoundry/ruby-buildpack.git
+  env:
+    USER_DB_NAME: yolodb
+    APP_ENV: production
