@@ -5,7 +5,7 @@ require_relative '../../helpers/hash'
 class UserController < Sinatra::Application
   def self.user_db
     unless defined? @udb
-      @udb = Sequel.postgres ENV['USER_DB_NAME'], user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+      @udb = Sequel.postgres ENV['PRIMARY_DB_NAME'], user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
     end
 
     @udb
