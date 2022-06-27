@@ -11,6 +11,7 @@ class DBController < Sinatra::Application
                              password: ENV['DB_PASS'],
                              host: ENV['DB_HOST']
     end
+
     @pdb
   end
 
@@ -21,6 +22,7 @@ class DBController < Sinatra::Application
                              password: ENV['ADMIN_PASS'],
                              host: ENV['DB_HOST']
     end
+    
     @pdb
   end
 

@@ -15,7 +15,7 @@ class UserController < Sinatra::Application
   end
 
   def get_one(id)
-    user = user_db[:users].where(id: id).delete
+    user = user_db[:users].where(id: id).first
     { ok: true, user: user.to_hash }
   end
 

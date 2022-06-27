@@ -8,16 +8,13 @@ require_relative 'src/routes/init'
 require_relative './config/environment'
 
 map '/' do
-  home_app = HomeRoutes.new
-  run home_app
+  run HomeRoutes.new
 end
 
 map '/users' do
-  users_app = UserRoutes.new
-  run users_app
+  run UserRoutes.new
 end
 
 map '/db' do
-  db_app = DatabaseRoutes.new
-  run db_app
+  run DatabaseRoutes.new
 end
