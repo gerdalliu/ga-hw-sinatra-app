@@ -131,7 +131,7 @@ class DatabaseRoutes < Sinatra::Base
         }.to_json
       end
 
-      summary = DBController.createTable(payload['dbname'], payload['name'], payload['columns'])
+      summary = DBController.create_table(payload['dbname'], payload['name'], payload['columns'])
 
       if summary[:ok]
         { msg: 'Table created.' }.to_json
@@ -245,7 +245,7 @@ class DatabaseRoutes < Sinatra::Base
       summary = DBController.insert_record(payload['dbname'], payload['name'], payload['input'])
 
       if summary[:ok]
-        { data: summary[:data] }.to_json
+        { msg: 'Record inserted.' }.to_json
       else
         { msg: 'Could not perform insert.', details: summary[:details] }.to_json
       end

@@ -1,12 +1,15 @@
 # frozen_string_literal: true
+
 ruby '3.0.3'
 
 source 'https://rubygems.org'
+gem 'bcrypt'
+gem 'dotenv'
 gem 'jwt'
 gem 'pg'
 gem 'sequel'
 gem 'sinatra'
 gem 'sinatra-contrib'
-gem 'dotenv'
-gem 'bcrypt'
 gem 'webrick'
+
+gem 'rubocop', '~> 1.31'

@@ -14,14 +14,25 @@ class DBController < Sinatra::Application
     @pdb
   end
 
+  def self.admin_db
+    unless defined? @PDB
+      @pdb = Sequel.postgres 'postgres',
+                             user: ENV['ADMIN_USER'],
+                             password: ENV['ADMIN_PASS'],
+                             host: ENV['DB_HOST']
+    end
+    @pdb
+  end
+
+  # TODO: provide admin credentials!
   def self.create_database(db_name)
-    query = "CREATE DATABASE #{PRIMARY_DB.literal(db_name).gsub!(/^'|'?$/, '')}"
+    query = "CREATE DATABASE #{db_name.gsub!(/^'|'?$/, '')}"
 
     primary_db.execute(query)
 
     { ok: true }
   rescue StandardError => e
-    { ok: false, details: e.message }
+    { ok: false, details: e.backtrace }
   end
 
   def self.databases
@@ -78,13 +89,13 @@ class DBController < Sinatra::Application
     types_error = false
 
     tmp_connection.create_table(name.strip.downcase.gsub(/\s+/, '_').to_sym) do
+      pkey_cols = []
+
       columns.each do |col|
         ## each col contains name, primary_key flag and a type field.
         ## We could include more constraints, but it is not necessary
 
         symbolic_name = col['name'].strip.downcase.to_sym
-
-        pkey_cols = []
 
         if col.key?('primary_key') && col['primary_key'] == true
           pkey_cols.append(symbolic_name)
@@ -106,6 +117,7 @@ class DBController < Sinatra::Application
 
     { ok: true }
   rescue StandardError => e
+    puts e.backtrace
     { ok: false, details: e.message }
   end
 
