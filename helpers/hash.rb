@@ -10,8 +10,7 @@ class HashUtil
   def self.check(hash, plain)
     hash_handle = BCrypt::Password.new(hash)
 
-    # ! If we do `plain == hashHandle` it returns false, when `hashHandle == plain` returns true.
-    # ! That's because of the operator overloading
+    # '==' is an overloaded operator
     hash_handle == plain
   end
 end
