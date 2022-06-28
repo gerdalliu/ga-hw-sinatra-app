@@ -332,6 +332,5 @@ class DatabaseRoutes < Sinatra::Base
         { msg: 'Could not perform DELETE.', details: summary[:details] }.to_json
       end
     end
-
   end
 end

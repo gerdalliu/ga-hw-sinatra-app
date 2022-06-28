@@ -23,11 +23,11 @@ Layout/MultilineMethodArgumentLineBreaks:
 Layout/MultilineMethodCallIndentation:
   EnforcedStyle: indented
 
-Metrics/BlockLength:
+Metric/BlockLength:
   Max: 100
-Metrics/ClassLength:
+Metric/ClassLength:
   Max: 284
-Metrics/MethodLength:
+Metric/MethodLength:
   Max: 50
 Metric/AbcSize:
   Max: 50

@@ -93,7 +93,6 @@ class DBController < Sinatra::Application
       pkey_cols = []
 
       columns.each do |col|
-
         symbolic_name = col['name'].strip.downcase.to_sym
 
         if col.key?('primary_key') && col['primary_key'] == true
