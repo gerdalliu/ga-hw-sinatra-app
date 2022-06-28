@@ -22,11 +22,10 @@ class DBController < Sinatra::Application
                              password: ENV['ADMIN_PASS'],
                              host: ENV['DB_HOST']
     end
-    
+
     @pdb
   end
 
-  # TODO: provide admin credentials!
   def self.create_database(db_name)
     query = "CREATE DATABASE #{db_name.gsub!(/^'|'?$/, '')}"
 
@@ -86,16 +85,14 @@ class DBController < Sinatra::Application
   end
 
   def self.create_table(db, name, columns)
-    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    db_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
     types_error = false
 
-    tmp_connection.create_table(name.strip.downcase.gsub(/\s+/, '_').to_sym) do
+    db_connection.create_table(name.strip.downcase.gsub(/\s+/, '_').to_sym) do
       pkey_cols = []
 
       columns.each do |col|
-        ## each col contains name, primary_key flag and a type field.
-        ## We could include more constraints, but it is not necessary
 
         symbolic_name = col['name'].strip.downcase.to_sym
 
@@ -124,8 +121,8 @@ class DBController < Sinatra::Application
   end
 
   def self.drop_table(db, name)
-    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
-    tmp_connection.drop_table(name.strip.downcase.gsub(/\s+/, '_').to_sym)
+    db_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    db_connection.drop_table(name.strip.downcase.gsub(/\s+/, '_').to_sym)
     { ok: true }
   rescue StandardError => e
     { ok: false, details: e.message }
@@ -134,9 +131,9 @@ class DBController < Sinatra::Application
   def self.get_table_description(db, name)
     query = 'select column_name, data_type, is_nullable from INFORMATION_SCHEMA.COLUMNS where table_name = ?'
 
-    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    db_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
-    desc = tmp_connection[query, name.strip.downcase.gsub(/\s+/, '_')]
+    desc = db_connection[query, name.strip.downcase.gsub(/\s+/, '_')]
 
     items = []
 
@@ -153,16 +150,15 @@ class DBController < Sinatra::Application
     { ok: false, details: e.message }
   end
 
-  ## We can specify only ONE operation, but for each operation we can specify multiple columns
+  ## In alter_table we can specify only one operation at a time, but for each operation we can specify multiple columns
   def self.alter_table(db, name, column_details, operation)
-    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    db_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
     symbolic_table_name = name.strip.downcase.gsub(/\s+/, '_').to_sym
 
-    # ! List of operations is minimal; can be extended later w/ things like NULL constraints etc.
     case operation.upcase
     when 'ADD'
-      tmp_connection.alter_table(symbolic_table_name) do
+      db_connection.alter_table(symbolic_table_name) do
         column_details.each do |col|
           symbolic_name = col['name'].strip.downcase.to_sym
           add_column symbolic_name, col['type']
@@ -170,7 +166,7 @@ class DBController < Sinatra::Application
       end
     when 'DROP'
 
-      tmp_connection.alter_table(symbolic_table_name) do
+      db_connection.alter_table(symbolic_table_name) do
         column_details.each do |col|
           symbolic_name = col.strip.downcase.to_sym
           drop_column symbolic_name
@@ -178,7 +174,7 @@ class DBController < Sinatra::Application
       end
 
     when 'RENAME'
-      tmp_connection.alter_table(symbolic_table_name) do
+      db_connection.alter_table(symbolic_table_name) do
         column_details.each do |col|
           oldsymbolic_name = col['old'].strip.downcase.to_sym
           newsymbolic_name = col['new'].strip.downcase.to_sym
@@ -186,7 +182,7 @@ class DBController < Sinatra::Application
         end
       end
     when 'PKEY'
-      tmp_connection.alter_table(symbolic_table_name) do
+      db_connection.alter_table(symbolic_table_name) do
         pkeys = []
         column_details.each do |col|
           symbolic_name = col.strip.downcase.to_sym
@@ -204,12 +200,10 @@ class DBController < Sinatra::Application
     { ok: false, details: e.message }
   end
 
-  ############################################################################
-
   ## For now only positive-AND is supported in parametric way (i.e. no NOT, OR operators)
   ## The rest is supported by providing literal condition strings like "NAME = 'test' OR 'NAME' LIKE '%Y' "
   def self.select(db, table, columns, where_conditions, literal_expr)
-    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    db_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
     symbolic_table_name = table.strip.downcase.gsub(/\s+/, '_').to_sym
 
@@ -217,12 +211,12 @@ class DBController < Sinatra::Application
 
     dataset = nil
     if !literal_expr.nil?
-      dataset = tmp_connection[symbolic_table_name].select(*columns).where(Sequel.lit(literal_expr))
+      dataset = db_connection[symbolic_table_name].select(*columns).where(Sequel.lit(literal_expr))
     elsif where_conditions.nil?
-      dataset = tmp_connection[symbolic_table_name].select(*columns)
+      dataset = db_connection[symbolic_table_name].select(*columns)
     else
       where_conditions = where_conditions.transform_keys(&:to_sym)
-      dataset = tmp_connection[symbolic_table_name].select(*columns).where(where_conditions)
+      dataset = db_connection[symbolic_table_name].select(*columns).where(where_conditions)
     end
 
     { ok: true, data: dataset.all }
@@ -231,11 +225,11 @@ class DBController < Sinatra::Application
   end
 
   def self.insert_record(db, table, inputs)
-    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    db_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
     symbolic_table_name = table.strip.downcase.gsub(/\s+/, '_').to_sym
 
-    inserter = tmp_connection[symbolic_table_name]
+    inserter = db_connection[symbolic_table_name]
     inputs = inputs.transform_keys(&:to_sym)
 
     inserter.insert(**inputs)
@@ -246,11 +240,11 @@ class DBController < Sinatra::Application
   end
 
   def self.delete_record(db, table, id)
-    tmp_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
+    db_connection = Sequel.postgres db, user: ENV['DB_USER'], password: ENV['DB_PASS'], host: ENV['DB_HOST']
 
     symbolic_table_name = table.strip.downcase.gsub(/\s+/, '_').to_sym
 
-    tmp_connection[symbolic_table_name].where(id: id).delete
+    db_connection[symbolic_table_name].where(id: id).delete
 
     { ok: true }
   rescue StandardError => e

@@ -42,7 +42,6 @@ class DatabaseRoutes < Sinatra::Base
       end
     end
 
-    #=> This lists all databases
     get('') do
       summary = DBController.databases
 
@@ -96,8 +95,6 @@ class DatabaseRoutes < Sinatra::Base
 
         summary = DBController.rename_database(payload['dbname'], payload['rename_to'])
       end
-
-      #=> can add other update procedures here
 
       if summary[:ok]
         { msg: 'Database schema updated.' }.to_json
@@ -220,7 +217,6 @@ class DatabaseRoutes < Sinatra::Base
     end
   end
 
-  # TODO: create the basic query string endpoints first.
   # /db/record
   namespace '/record' do
     post('/insert') do
@@ -251,7 +247,6 @@ class DatabaseRoutes < Sinatra::Base
       end
     end
 
-    ## simple selects, not grouping or limiting/paginating
     post('/select') do
       payload = params
       payload = JSON.parse(request.body.read) unless params[:path]
@@ -303,7 +298,6 @@ class DatabaseRoutes < Sinatra::Base
       end
     end
 
-    ## A simple DELETE using just a single ID
     delete('/delete') do
       unless params.key?('dbname') && !params['dbname'].empty?
         return {
@@ -339,9 +333,5 @@ class DatabaseRoutes < Sinatra::Base
       end
     end
 
-    # ! Not implementing this as of this time.
-    put('/update') do
-      'This updates rows'
-    end
   end
 end

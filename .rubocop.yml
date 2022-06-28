@@ -26,9 +26,9 @@ Layout/MultilineMethodCallIndentation:
 Metrics/BlockLength:
   Max: 100
 Metrics/ClassLength:
-  Max: 284 # TODO: Set to 200
+  Max: 284
 Metrics/MethodLength:
-  Max: 50 # TODO: Set to 25
+  Max: 50
 Metric/AbcSize:
   Max: 50
 Metric/CyclomaticComplexity:
