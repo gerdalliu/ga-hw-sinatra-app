@@ -1,3 +1,4 @@
 *html
 .env
 *vcap*
+.bundle
