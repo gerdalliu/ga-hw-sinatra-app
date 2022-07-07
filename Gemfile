@@ -11,5 +11,6 @@ gem 'sequel'
 gem 'sinatra'
 gem 'sinatra-contrib'
 gem 'webrick'
+gem 'rack'
 
 gem 'rubocop', '~> 1.31'
