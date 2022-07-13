@@ -1,0 +1,10 @@
+---
+applications:
+- name: ga-ruby-app
+  memory: 256M
+  instances: 1
+  host: garuby
+  buildpacks:
+  - https://github.com/cloudfoundry/ruby-buildpack.git
+  env:
+    APP_ENV: production
